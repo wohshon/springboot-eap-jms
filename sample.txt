@@ -1,0 +1,3 @@
+'{"id": "001", "name": "john", "body":"123456"}'
+
+curl -X POST -v 192.168.223.130:8080/app2-0.0.1-SNAPSHOT/test -d '{"id": "005", "name": "john", "body":"123456"}' -H 'Content-Type: application/json'
