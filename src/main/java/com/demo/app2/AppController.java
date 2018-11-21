@@ -1,11 +1,16 @@
 package com.demo.app2;
 
+import javax.jms.ConnectionFactory;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-//import org.jboss.logging.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.qpid.jms.JmsConnectionFactory;
+import org.springframework.boot.autoconfigure.jms.DefaultJmsListenerContainerFactoryConfigurer;
+import org.springframework.context.annotation.Bean;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.annotation.JmsListener;
+import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
+import org.springframework.jms.config.JmsListenerContainerFactory;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.messaging.Message;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,11 +21,22 @@ import com.demo.app2.model.Payload;
 
 @EnableJms
 @RestController
+//@ConditionalOnClass(EnableJms.class)
+//@Primary
 public class AppController {
 
-    @Autowired
-    private JmsTemplate jmsTemplate;
+	private ConnectionFactory cf=new JmsConnectionFactory("admin","admin","amqp://broker-amq-amqp.amq.svc.cluster.local:5672");
+//    @Autowired
+    private JmsTemplate jmsTemplate=new JmsTemplate(cf);
     
+    @Bean
+    public JmsListenerContainerFactory<?> jmsListenerContainerFactory (ConnectionFactory connectionFactory,
+                                                    DefaultJmsListenerContainerFactoryConfigurer configurer) {
+        DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+        //configurer.configure(factory, connectionFactory);
+        configurer.configure(factory, cf);
+        return factory;
+    }    
 	//Logger logger=Logger.getLogger(this.getClass());
     Logger logger=LogManager.getLogger(getClass());
 
@@ -28,6 +44,7 @@ public class AppController {
 	void test(@RequestBody Payload payload) {
 		logger.info("====================>"+payload.getId());
 		logger.info("====================>Sending "+payload.toString());
+		System.out.println(this.jmsTemplate.getConnectionFactory());
 		this.jmsTemplate.convertAndSend("queue1",payload.toString());
 /*		this.jmsTemplate.send("queue1", new MessageCreator() {
 			
@@ -39,7 +56,7 @@ public class AppController {
 		});*/
 	}
 	
-    @JmsListener(destination = "queue1")
+    @JmsListener(destination = "queue1", containerFactory="jmsListenerContainerFactory")
     public void receiveMessage(Message<String> text) {
         logger.info(String.format("Received '%s'", text.getPayload()));
     }	
