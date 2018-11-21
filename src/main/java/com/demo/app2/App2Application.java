@@ -10,4 +10,5 @@ public class App2Application extends SpringBootServletInitializer{
 	public static void main(String[] args) {
 		SpringApplication.run(App2Application.class, args);
 	}
+	
 }
